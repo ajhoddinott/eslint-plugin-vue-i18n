@@ -22,9 +22,10 @@ describe('extractKeysFromText', () => {
     })
 
     it('matches member-call this.$i18n.t(...)', () => {
-      deepStrictEqual(extract(`this.$i18n.t('hello {name}', { name: 'DIO' })`), [
-        'hello {name}'
-      ])
+      deepStrictEqual(
+        extract(`this.$i18n.t('hello {name}', { name: 'DIO' })`),
+        ['hello {name}']
+      )
     })
 
     it('matches all four function names: t, tc, $t, $tc', () => {
@@ -36,7 +37,7 @@ describe('extractKeysFromText', () => {
 
     it('matches double-quoted, single-quoted, and backtick literals', () => {
       deepStrictEqual(
-        extract("t('a'); t(\"b\"); t(`c`)"),
+        extract('t(\'a\'); t("b"); t(`c`)'),
         ['a', 'b', 'c'].sort()
       )
     })
@@ -46,7 +47,10 @@ describe('extractKeysFromText', () => {
     })
 
     it('does not match identifiers ending in t( like setTimeout(', () => {
-      deepStrictEqual(extract(`setTimeout(() => {}, 100); at('x'); et('y')`), [])
+      deepStrictEqual(
+        extract(`setTimeout(() => {}, 100); at('x'); et('y')`),
+        []
+      )
     })
 
     it('does not match it( or test(', () => {
@@ -66,14 +70,43 @@ describe('extractKeysFromText', () => {
     it('handles whitespace and newlines around the literal', () => {
       deepStrictEqual(extract(`t(\n  'multi'\n)`), ['multi'])
     })
+
+    it('matches calls with generic type arguments', () => {
+      deepStrictEqual(extract(`t<MyType>('foo.bar')`), ['foo.bar'])
+      deepStrictEqual(extract(`$t<string>('plain')`), ['plain'])
+      deepStrictEqual(extract(`tc<number, string>('plural.example', 2)`), [
+        'plural.example'
+      ])
+    })
+
+    it('matches calls with nested generic type arguments', () => {
+      deepStrictEqual(extract(`t<Array<string>>('nested')`), ['nested'])
+      deepStrictEqual(extract(`t<Record<string, number>>('record.key')`), [
+        'record.key'
+      ])
+    })
+
+    it('matches generics that span lines', () => {
+      deepStrictEqual(
+        extract(`t<{\n  a: number;\n  b: string;\n}>('shape.key')`),
+        ['shape.key']
+      )
+    })
+
+    it('does not get confused by an unrelated < comparison', () => {
+      // `<` here is a less-than, not a type-arg opener. We should still
+      // find `t('after')` further on without false-matching across the
+      // intervening code.
+      deepStrictEqual(extract(`if (a < b) {} ; t('after')`), ['after'])
+    })
   })
 
   describe('v-t directive', () => {
-    it("matches v-t=\"'foo'\" (double outside, single inside)", () => {
+    it('matches v-t="\'foo\'" (double outside, single inside)', () => {
       deepStrictEqual(extract(`<p v-t="'foo'">x</p>`), ['foo'])
     })
 
-    it("matches v-t='\"foo\"' (single outside, double inside)", () => {
+    it('matches v-t=\'"foo"\' (single outside, double inside)', () => {
       deepStrictEqual(extract(`<p v-t='"foo"'>x</p>`), ['foo'])
     })
   })

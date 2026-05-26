@@ -14,17 +14,29 @@
  * already parsed the file for us.
  *
  * Edge cases this approach gives up vs full AST extraction:
- *   - Generic type arguments between the call name and `(`, e.g.
- *     `t<MyType>('key')`, are not recognised. Rare in practice.
  *   - Translation key strings split across concatenation, e.g.
  *     `t('foo.' + 'bar')`, are not recognised. The AST extractor also
  *     skipped these (only static literals are reported).
  *   - Multi-line attribute values on `<i18n>` components are matched only
  *     within a 1KB window from the opening `<` to keep the regex bounded.
+ *   - Generic type arguments are recognised up to 512 characters between
+ *     the `<` and the matching `>`; longer type arg lists fall back to
+ *     not matching that call. Type arg lists that long don't occur in
+ *     real code.
  */
 
-const T_CALL_RE =
-  /(?:^|[^A-Za-z0-9_$])\$?tc?\s*\(\s*(['"`])((?:\\[\s\S]|(?!\1)[^\\])*)\1/g
+// Optional TypeScript generic type arguments between the call name and `(`,
+// e.g. `t<MyType>('key')`. Non-greedy so it doesn't accidentally swallow
+// content past the closing `>`, and bounded so a stray `<` elsewhere in
+// the file can't make the engine scan arbitrarily forward. Nested generics
+// like `t<Array<string>>(...)` work because the inner `<` and `>` are
+// inside the [\s\S] class.
+const TYPE_ARGS = /(?:\s*<[\s\S]{0,512}?>)?/.source
+
+const T_CALL_RE = new RegExp(
+  `(?:^|[^A-Za-z0-9_$])\\$?tc?${TYPE_ARGS}\\s*\\(\\s*(['"\`])((?:\\\\[\\s\\S]|(?!\\1)[^\\\\])*)\\1`,
+  'g'
+)
 
 const V_T_DOUBLE_RE = /v-t\s*=\s*"\s*(['"`])((?:\\[\s\S]|(?!\1)[^\\])*)\1\s*"/g
 const V_T_SINGLE_RE = /v-t\s*=\s*'\s*(["`])((?:\\[\s\S]|(?!\1)[^\\])*)\1\s*'/g
