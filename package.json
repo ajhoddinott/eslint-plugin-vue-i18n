@@ -60,7 +60,6 @@
     "changeset": "changeset"
   },
   "dependencies": {
-    "@eslint/eslintrc": "^3.0.0",
     "@intlify/core-base": "^11.0.0",
     "@intlify/message-compiler": "^11.0.0",
     "debug": "^4.3.4",

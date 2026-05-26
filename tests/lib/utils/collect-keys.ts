@@ -30,11 +30,13 @@ describe('usedKeysCache', () => {
   const filesDir = join(__dirname, '../../fixtures/utils/collect-keys/src')
 
   function collectKeysFromFiles() {
-    return usedKeysCache.collectKeysFromFiles(
-      [filesDir],
-      ['.vue', '.js'],
-      {} as never
-    )
+    return [
+      ...usedKeysCache.collectKeysFromFiles(
+        [filesDir],
+        ['.vue', '.js'],
+        {} as never
+      )
+    ].sort()
   }
   it('should be refresh with change files.', async () => {
     const vuePath = join(
@@ -47,11 +49,10 @@ describe('usedKeysCache', () => {
     )
     const bkVue = readFileSync(vuePath, 'utf8')
     try {
-      deepStrictEqual(collectKeysFromFiles(), [
-        'hello_dio',
-        'messages.link',
-        'hello {name}'
-      ])
+      deepStrictEqual(
+        collectKeysFromFiles(),
+        ['hello {name}', 'hello_dio', 'messages.link'].sort()
+      )
       writeFileSync(
         vuePath,
         `<template><div id="app">{{ $t('messages.link') }}</div></template>`
@@ -61,7 +62,7 @@ describe('usedKeysCache', () => {
 
       writeFileSync(jsPath, "const $t = () => {}\n$t('hello')\n", 'utf8')
       await new Promise(resolve => setTimeout(resolve, 20))
-      deepStrictEqual(collectKeysFromFiles(), ['hello', 'messages.link'])
+      deepStrictEqual(collectKeysFromFiles(), ['hello', 'messages.link'].sort())
     } finally {
       writeFileSync(vuePath, bkVue, 'utf8')
       try {
