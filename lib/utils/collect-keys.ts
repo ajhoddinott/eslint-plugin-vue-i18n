@@ -3,6 +3,7 @@
  * @author kazuya kawaguchi (a.k.a. kazupon)
  */
 import { AST as VAST } from 'vue-eslint-parser'
+import { readFileSync } from 'fs'
 import { resolve, extname } from 'path'
 import { listFilesToProcess } from './glob-utils'
 import { ResourceLoader } from './resource-loader'
@@ -15,6 +16,31 @@ import { isStaticLiteral, getStaticLiteralValue } from './index'
 import type { Parser } from './parser-config-resolver'
 import { buildParserFromConfig } from './parser-config-resolver'
 const debug = debugBuilder('eslint-plugin-vue-i18n:collect-keys')
+
+// Cheap textual prefilter that lets us skip parsing files which obviously
+// contain no translation references. Designed to be conservative: false
+// positives are fine (we fall through to the normal parse path) but it MUST
+// NOT produce false negatives, since that would silently drop used keys and
+// make `no-unused-keys` report bogus errors.
+//
+// Patterns recognized:
+//   - `$t(`, `t(`, `$tc(`, `tc(` as call expressions — preceded by a
+//     non-identifier character so we don't trigger on e.g. `setTimeout(`,
+//     `at(`, `await(`. Whitespace between name and `(` is allowed.
+//   - `v-t` directive in Vue templates.
+//   - The literal substrings `i18n` and `I18nT` which appear in any
+//     `<i18n>`, `<i18n-t>`, `<I18nT>` component reference (and almost
+//     always in any file that imports from vue-i18n).
+const I18N_REFERENCE_RE = /(?:^|[^A-Za-z0-9_$])\$?tc?\s*\(|v-t\b|i18n|I18nT/
+
+function fileHasI18nReference(filename: string): boolean {
+  try {
+    return I18N_REFERENCE_RE.test(readFileSync(filename, 'utf8'))
+  } catch {
+    // If we can't read the file, let the parser try and decide.
+    return true
+  }
+}
 
 /**
  *
@@ -80,6 +106,9 @@ function collectKeysFromText(filename: string, parser: Parser) {
   const effectiveFilename = filename || '<text>'
   debug(`collectKeysFromFile ${effectiveFilename}`)
   try {
+    if (filename && !fileHasI18nReference(filename)) {
+      return []
+    }
     const parseResult = parser(filename)
     if (!parseResult) {
       return []

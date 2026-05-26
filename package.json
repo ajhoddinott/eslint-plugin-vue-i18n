@@ -74,8 +74,7 @@
     "json5": "^2.2.3",
     "lodash": "^4.17.21",
     "parse5": "^7.1.2",
-    "semver": "^7.5.4",
-    "synckit": "^0.11.0"
+    "semver": "^7.5.4"
   },
   "devDependencies": {
     "@changesets/changelog-github": "^0.6.0",
