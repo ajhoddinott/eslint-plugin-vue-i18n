@@ -551,7 +551,8 @@ function create(context: RuleContext): RuleListener {
     const usedLocaleMessageKeys = usedKeysCache.collectKeysFromFiles(
       [src],
       extensions,
-      context
+      context,
+      { useRegexExtraction: options.useRegexExtraction === true }
     )
 
     const usedKeys = getUsedKeysMap(
@@ -601,6 +602,10 @@ export = createRule({
           },
           enableFix: {
             type: 'boolean'
+          },
+          useRegexExtraction: {
+            type: 'boolean',
+            default: false
           }
         },
         additionalProperties: false

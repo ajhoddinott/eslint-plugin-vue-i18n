@@ -164,7 +164,8 @@ i18n.t('hi')
       "src": "./src",
       "extensions": [".js", ".vue"],
       "ignores": [],
-      "enableFix": false
+      "enableFix": false,
+      "useRegexExtraction": false
     }
   ]
 }
@@ -174,6 +175,7 @@ i18n.t('hi')
 - `extensions`: an array to allow specified lintable target file extension. If you don't set any options, it set to `.js` and `.vue` as default.
 - `ignores`: An array of key names and patterns to exclude from the check. If you want to specify a pattern, specify a string such as `/pattern/`.
 - `enableFix`: if `true`, enable automatically remove unused keys on `eslint --fix`. If you don't set any options, it set to `false` as default. (This is an experimental feature.)
+- `useRegexExtraction`: if `true`, scan source files for `$t()` / `t()` / `v-t` / `<i18n[-t]>` references using regex instead of parsing each file's AST. Much faster on TypeScript-heavy projects, but doesn't recognise translation keys built by string concatenation (`t('foo.' + 'bar')`) or `<i18n>` attribute bodies longer than 1KB. Default: `false`.
 
 ## :couple: Related Rules
 

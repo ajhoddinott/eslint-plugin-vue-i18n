@@ -29,15 +29,25 @@ describe('usedKeysCache', () => {
 
   const filesDir = join(__dirname, '../../fixtures/utils/collect-keys/src')
 
-  function collectKeysFromFiles() {
+  function collectKeysFromFiles(
+    options: { useRegexExtraction?: boolean } = {}
+  ) {
     return [
       ...usedKeysCache.collectKeysFromFiles(
         [filesDir],
         ['.vue', '.js'],
-        {} as never
+        {} as never,
+        options
       )
     ].sort()
   }
+
+  it('default (AST) extraction finds the same keys as regex extraction', () => {
+    const ast = collectKeysFromFiles({ useRegexExtraction: false })
+    const regex = collectKeysFromFiles({ useRegexExtraction: true })
+    deepStrictEqual(ast, regex)
+    deepStrictEqual(ast, ['hello {name}', 'hello_dio', 'messages.link'].sort())
+  })
   it('should be refresh with change files.', async () => {
     const vuePath = join(
       __dirname,
